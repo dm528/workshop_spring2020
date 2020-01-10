@@ -1,0 +1,364 @@
+---
+title: 'Workshop 2: Nonlinear Models'
+author: "Donna Marain"
+date: "1/17/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Objectives
+Ideally, the objective of this analysis was to fit monthly temperature response curves for Harvard forest to understand annual patterns in respiration rates in response to temperature changes in temperate mixed forests. Practically, the objective of this analysis is to gain nonlinear modeling skills by diving into the deep end of R coding using data from a system I'm completely unfamiliar with. The following report details my practical journey.
+
+# Methods
+## Site Information (include a map of the harvard forest site)
+The data I worked with come from the Environmental Measurement Station (EMS) Eddy Flux Tower located at Harvard Forest in Massachusetts (Fig. 1).
+
+Fig. 1:![](C:/Users/dm528/Desktop/workshop_spring2020/Map-of-Harvard-Forest-and-New-England-The-location-of-the-different-tracts-and-of-the "Source:researchgate.net"){width=50%} Source:researchgate.net
+
+## Measure of Interest
+The equation I attempted to fit to the data was NEE~night~=R~eco~=R~0~e^b-TA^ , where NEE~night~ is the net ecosystem exchange rate at night, R~eco~ is the ecosystem respiration during the day, R~0~ is the ecosystem respiration rate when the air temperature is zero degrees Celsius, b is an empirical coefficient, and TA is the air temperature. Net ecosystem exchange rate is worthy of study because it measures the amount of carbon that an ecosystem is able to convert from abiotic CO^2^ into biologically available materials, meaning it is a measure of primary productivity.
+
+## Coding attempts
+I began with the assignment key provided in class. Because this approach did not provide estimates for R~0~ and b for the growing season months (see Table 1), I then subset the data for growing season months and non-growing season months and performed the analyses again on the separate data sets for the two seasons. Because subsetting resulted in the same model failures as the assignment key (see Tables 2 and 3), I suspected that the initial values provided were what needed to be adjusted. I attempted to go into the literature to determine appropriate estimates for R~0~ (base respiration rate) and b (empirical coefficient). I found Table 3 in Malone et al. (2016) which provided estimates for these parameters in the Everglades, a very different system than Harvard forest, but it's what I could find. I then changed the assignment key R code to pick a random value for R~0~ between zero and one and a random value between 0 and 0.1 for b based on Table 3 of Malone et al. (2016) and re-ran the code using the full night dataset. Needless to say this failed too (see Table 4) and then I gave up and started writing this report.
+
+# Results (at least 1 plot and one table)
+```{r pressure, echo=FALSE}
+load("C:/Users/dm528/Desktop/workshop_spring2020/NLM_Workshop.RData")
+jan<-night[night$MONTH==1,]
+feb<-night[night$MONTH==2,]
+mar<-night[night$MONTH==3,]
+apr<-night[night$MONTH==4,]
+may<-night[night$MONTH==5,]
+jun<-night[night$MONTH==6,]
+jul<-night[night$MONTH==7,]
+aug<-night[night$MONTH==8,]
+sep<-night[night$MONTH==9,]
+oct<-night[night$MONTH==10,]
+nov<-night[night$MONTH==11,]
+dec<-night[night$MONTH==12,]
+par(mfrow=c(4,3))
+par(mar=c(1,1,1,1))
+par(mai=c(.2,.2,.2,.2))
+par(oma=c(2,2,0,0))
+plot(jan$NEE,jan$TA,main="January")
+plot(feb$NEE,feb$TA,main="February")
+plot(mar$NEE,mar$TA,main="March")
+plot(apr$NEE,apr$TA,main="April")
+plot(may$NEE,may$TA,main="May")
+plot(jun$NEE,jun$TA,main="June")
+plot(jul$NEE,jul$TA,main="July")
+plot(aug$NEE,aug$TA,main="August")
+plot(sep$NEE,sep$TA,main="September")
+plot(oct$NEE,oct$TA,main="October")
+plot(nov$NEE,nov$TA,main="November")
+plot(dec$NEE,dec$TA,main="December")
+mtext('TA', side = 1, outer = TRUE, line = 1)
+mtext('NEE', side = 2, outer = TRUE, line = 1)
+```
+
+
+Plot 1:The monthly net ecosystem exchange rate plotted against air temperature. The lecture PowerPoint from class suggests they should exhibit a linearly increasing trend, or a very gradual exponential growth trend. That does not appear to be the case in these data.
+
+```{r,echo=F,warning=F,message=F}
+trcModel <- function(TA, a, b) {
+  y=a * exp(b-TA)
+  return(y)
+}
+
+# Create a function to find initial values for the selfstart function:
+trc.int <- function (mCall, LHS, data){
+  x <- data$TA
+  y <- data$NEE
+  
+  a <-1.00703982 + -0.08089044* (min(na.omit(y)))
+  b <- 0.051654 + 0.001400 * (min(na.omit(y))) 
+  
+  value = list(a, b)
+  names(value) <- mCall[c("a", "b")]
+  return(value)
+}
+
+# Selfstart Function
+SS.trc <- selfStart(model=trcModel,initial= trc.int)
+
+#__________________________________________________________________________________________
+#__________________________________________________________________________________________
+#__________________________________________________________________________________________
+
+# Fitting monthly models:
+
+# Create Dataframe to store the data:
+parms.Month <- data.frame(
+  MONTH=numeric(),
+  a=numeric(),
+  b=numeric(), 
+  a.pvalue=numeric(),
+  b.pvalue=numeric(), stringsAsFactors=FALSE, row.names=NULL)
+
+
+parms.Month[1:12, 1] <- seq(1,12,1) # Creates time file to merge with parm file:
+
+#Functions:
+nee.night <- function(dataframe){y.df = nls(NEE ~ a * exp(b-TA), 
+                                            dataframe, start=list(a= iv$a , b=iv$b ),
+                                            na.action=na.exclude, trace=F,
+                                            control=nls.control(warnOnly=T))
+
+y.df <- as.data.frame(cbind(t(coef(summary(y.df))[1:2, 1]), t(coef(summary(y.df)) [1:2, 4])))
+
+names(y.df) <- c("a", "b", "a.pvalue", "b.pvalue")                      
+return(y.df)}
+
+# This loop fits monthly models (1:12):
+try(for(j in unique(night$MONTH)){
+    iv <- getInitial(NEE ~ SS.trc('TA', "a", "b"), data = night[which(night$MONTH == j),]) 
+  
+  y4 <- try(nee.night(night[which(night$MONTH == j),]), silent=T) # Fit night model
+  
+  try(parms.Month[c(parms.Month$MONTH == j ), 2:5 ] <- cbind(y4), silent=T)
+  
+  rm(y4)
+}, silent=T)
+library(knitr)
+library(kableExtra)
+kable(parms.Month, digits = 3,escape=F)%>%kable_styling(full_width=T)
+```
+Table 1: Parameter estimates for a (aka R~0~) and b using the provided answer key.
+```{r,echo=F,warning=F,message=F}
+trcModel <- function(TA, a, b) {
+  y=a * exp(b-TA)
+  return(y)
+}
+
+# Create a function to find initial values for the selfstart function:
+trc.int <- function (mCall, LHS, data){
+  x <- data$TA
+  y <- data$NEE
+  
+  a <-1.00703982 + -0.08089044* (min(na.omit(y)))
+  b <- 0.051654 + 0.001400 * (min(na.omit(y))) 
+  
+  value = list(a, b)
+  names(value) <- mCall[c("a", "b")]
+  return(value)
+}
+
+# Selfstart Function
+SS.trc <- selfStart(model=trcModel,initial= trc.int)
+
+#__________________________________________________________________________________________
+#__________________________________________________________________________________________
+#__________________________________________________________________________________________
+
+# Fitting monthly models:
+
+# Create Dataframe to store the data:
+growparms.Month <- data.frame(
+  MONTH=numeric(),
+  a=numeric(),
+  b=numeric(), 
+  a.pvalue=numeric(),
+  b.pvalue=numeric(), stringsAsFactors=FALSE, row.names=NULL)
+
+
+growparms.Month[1:12, 1] <- seq(1,12,1) # Creates time file to merge with parm file:
+
+#Functions:
+nee.night <- function(dataframe){y.df = nls(NEE ~ a * exp(b-TA), 
+                                            dataframe, start=list(a= iv$a , b=iv$b ),
+                                            na.action=na.exclude, trace=F,
+                                            control=nls.control(warnOnly=T))
+
+y.df <- as.data.frame(cbind(t(coef(summary(y.df))[1:2, 1]), t(coef(summary(y.df)) [1:2, 4])))
+
+names(y.df) <- c("a", "b", "a.pvalue", "b.pvalue")                      
+return(y.df)}
+
+# This loop fits monthly models 
+grow<-subset(night, MONTH==4 | MONTH==5 | MONTH==6 | MONTH==7 | MONTH==8 | MONTH==9 | MONTH==10)
+try(for(j in unique(grow$MONTH)){
+  
+  iv <- getInitial(NEE ~ SS.trc('TA', "a", "b"), data = grow[which(grow$MONTH == j),]) 
+  
+  y4 <- try(nee.night(grow[which(grow$MONTH == j),]), silent=T) # Fit night model
+  
+  try(growparms.Month[c(growparms.Month$MONTH == j ), 2:5 ] <- cbind(y4), silent=T)
+  
+  rm(y4)
+}, silent=T)
+library(knitr)
+kable(growparms.Month, digits = 3,escape=F)%>%kable_styling(full_width=T)
+```
+Table 2: Parameter estimates for a (aka R~0~) and b using the provided answer key after subsetting the night data into the growing months (April through October).
+```{r,echo=F,warning=F,message=F}
+trcModel <- function(TA, a, b) {
+  y=a * exp(b-TA)
+  return(y)
+}
+
+# Create a function to find initial values for the selfstart function:
+trc.int <- function (mCall, LHS, data){
+  x <- data$TA
+  y <- data$NEE
+  
+  a <-runif(1,0,1)
+  b <- runif(1,1,.1) 
+  
+  value = list(a, b)
+  names(value) <- mCall[c("a", "b")]
+  return(value)
+}
+
+# Selfstart Function
+SS.trc <- selfStart(model=trcModel,initial= trc.int)
+
+#__________________________________________________________________________________________
+#__________________________________________________________________________________________
+#__________________________________________________________________________________________
+
+# Fitting monthly models:
+
+# Create Dataframe to store the data:
+trcModel <- function(TA, a, b) {
+  y=a * exp(b-TA)
+  return(y)
+}
+
+# Create a function to find initial values for the selfstart function:
+trc.int <- function (mCall, LHS, data){
+  x <- data$TA
+  y <- data$NEE
+  
+  a <-1.00703982 + -0.08089044* (min(na.omit(y)))
+  b <- 0.051654 + 0.001400 * (min(na.omit(y))) 
+  
+  value = list(a, b)
+  names(value) <- mCall[c("a", "b")]
+  return(value)
+}
+
+# Selfstart Function
+SS.trc <- selfStart(model=trcModel,initial= trc.int)
+
+#__________________________________________________________________________________________
+#__________________________________________________________________________________________
+#__________________________________________________________________________________________
+
+# Fitting monthly models:
+
+# Create Dataframe to store the data:
+nongrowparms.Month <- data.frame(
+  MONTH=numeric(),
+  a=numeric(),
+  b=numeric(), 
+  a.pvalue=numeric(),
+  b.pvalue=numeric(), stringsAsFactors=FALSE, row.names=NULL)
+
+
+nongrowparms.Month[1:12, 1] <- seq(1,12,1) # Creates time file to merge with parm file:
+
+#Functions:
+nee.night <- function(dataframe){y.df = nls(NEE ~ a * exp(b-TA), 
+                                            dataframe, start=list(a= iv$a , b=iv$b ),
+                                            na.action=na.exclude, trace=F,
+                                            control=nls.control(warnOnly=T))
+
+y.df <- as.data.frame(cbind(t(coef(summary(y.df))[1:2, 1]), t(coef(summary(y.df)) [1:2, 4])))
+
+names(y.df) <- c("a", "b", "a.pvalue", "b.pvalue")                      
+return(y.df)}
+
+# This loop fits monthly models (1:12):
+nongrow<-subset(night, MONTH==1 | MONTH==2 | MONTH==3 | MONTH==11 | MONTH==12)
+try(for(j in unique(nongrow$MONTH)){
+  
+  iv <- getInitial(NEE ~ SS.trc('TA', "a", "b"), data = nongrow[which(nongrow$MONTH == j),]) 
+  
+  y4 <- try(nee.night(nongrow[which(nongrow$MONTH == j),]), silent=T) # Fit night model
+  
+  try(nongrowparms.Month[c(nongrowparms.Month$MONTH == j ), 2:5 ] <- cbind(y4), silent=T)
+  
+  rm(y4)
+}, silent=T)
+library(knitr)
+kable(nongrowparms.Month, digits = 3,escape=F)%>%kable_styling(full_width=T)
+```
+Table 3: Parameter estimates for a (aka R~0~) and b using the provided answer key after subsetting the night data into the non-growing season months (November through March). Note these are the same parameter esimates as Table 1.
+```{r,echo=F,warning=F,message=F}
+trcModel <- function(TA, a, b) {
+  y=a * exp(b-TA)
+  return(y)
+}
+
+# Create a function to find initial values for the selfstart function:
+trc.int <- function (mCall, LHS, data){
+  x <- data$TA
+  y <- data$NEE
+  
+  a <-runif(1,0,1)
+  b <- runif(1,1,.1) 
+  
+  value = list(a, b)
+  names(value) <- mCall[c("a", "b")]
+  return(value)
+}
+
+# Selfstart Function
+SS.trc <- selfStart(model=trcModel,initial= trc.int)
+
+#__________________________________________________________________________________________
+#__________________________________________________________________________________________
+#__________________________________________________________________________________________
+
+# Fitting monthly models:
+
+# Create Dataframe to store the data:
+randomparms.Month <- data.frame(
+  MONTH=numeric(),
+  a=numeric(),
+  b=numeric(), 
+  a.pvalue=numeric(),
+  b.pvalue=numeric(), stringsAsFactors=FALSE, row.names=NULL)
+
+
+randomparms.Month[1:12, 1] <- seq(1,12,1) # Creates time file to merge with parm file:
+
+#Functions:
+nee.night <- function(dataframe){y.df = nls(NEE ~ a * exp(b-TA), 
+                                            dataframe, start=list(a= iv$a , b=iv$b ),
+                                            na.action=na.exclude, trace=F,
+                                            control=nls.control(warnOnly=T))
+
+y.df <- as.data.frame(cbind(t(coef(summary(y.df))[1:2, 1]), t(coef(summary(y.df)) [1:2, 4])))
+
+names(y.df) <- c("a", "b", "a.pvalue", "b.pvalue")                      
+return(y.df)}
+
+# This loop fits monthly models (1:12):
+try(for(j in unique(night$MONTH)){
+  
+  iv <- getInitial(NEE ~ SS.trc('TA', "a", "b"), data = night[which(night$MONTH == j),]) 
+  
+  y4 <- try(nee.night(night[which(night$MONTH == j),]), silent=T) # Fit night model
+  
+  try(randomparms.Month[c(randomparms.Month$MONTH == j ), 2:5 ] <- cbind(y4), silent=T)
+  
+  rm(y4)
+}, silent=T)
+
+library(knitr)
+kable(randomparms.Month, digits = 3,escape=F)%>%kable_styling(full_width=T)
+```
+Table 4: Parameter estimates for a (aka R~0~) and b after altering the provided answer key code to choose a random initial value for a and b.
+
+# Discussion and Existential State of Affairs (1 paragrapgh)
+While I did not come close to answering the science question posed to us (fit the Arrhenius equation to the monthly Harvard Forest data), I did learn a lot in the process of trying about how to code in Rmarkdown. If I were to put more effort into trying to answer the science question, my next approach would be to try to iteratively pick random values within an appropriate range for R~0~ and b until initial values were chosen that allowed the model to converge. Or I could keep searching the literature for appropriate values for Harvard forest. As it stands, I am (hopefully) 9 months away from being done with my PhD. I really do appreciate this introduction to the highest levels of coding and I'm sure I will continue to build on them using my own data as I process them for use in my thesis. But as it stands now, I need to reserve my worn-down efforts and energies for finishing my degree and not necessarily killing myself on any class assignments.*
+
+*Not meant to be flippant or offensive. I'm just honestly so tired.
+
+# References
+Malone, S. L., Barr, J., Fuentes, J. D., Oberbauer, S. F., Staudhammer, C. L., Gaiser, E. E., & Starr, G. (2016). Sensitivity to Low-Temperature Events: Implications for CO 2 Dynamics in Subtropical Coastal Ecosystems. Wetlands, 36(5), 957-967.

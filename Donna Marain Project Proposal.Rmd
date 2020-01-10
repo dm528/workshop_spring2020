@@ -1,0 +1,32 @@
+---
+title: "Donna Marain Project Proposal"
+author: "Donna Marain"
+date: "1/10/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Research Statement
+My first thoughts are that my final project will involve time series analyses of breeding bird data that I analyzed for a National Park Service internship last summer. The NPS took aerial photos on a monthly basis for the last nine years of breeding bird colonies in Biscayne National Park. At the time of my internship I had no skillset to analyze seasonality in these data so I hope to learn how to do that in this class. Nonlinear models and bootstrapping may also come in handy.
+
+## Objective
+Investigate the Biscayne National Park breeding bird census data for periodic patterns. 
+
+## Hypothesis
+Null Hypothesis: There is no discernible pattern in the breeding bird census data.
+
+Alternative Hypothesis: There exists periodicity in the breeding bird census data. 
+
+## Datasets
+I have the breeding bird nest numbers in an Excel document. I analyzed these data and found 5% annual growth across the entire population using generalized liner models, though northern colonies were the ones actually growing while southern colonies declined over the study period. This has been written up in a manuscript that will be going out to the journal Waterbirds in early January. I also attempted to correlate the nest numbers with publicly available environmental data (chlorophyll, salinity, fish surveys, etc) but found no useful correlations. I hope to learn more sophisticated analyses in this class that might help me discover more information in these data.
+
+## Statistical Analyses
+TBD
+
+
+
