@@ -1,0 +1,40 @@
+---
+title: "Workshop 3_Timeseries Models"
+author: "Donna Marain"
+date: "1/24/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Objectives
+The primary objective of this workshop was to learn the basics of species distribution modeling in R. I used Bald Eagle nest survey data from the State of Florida available at the link below in the references.
+
+# Methods
+I followed the Jeff Oliver tutorial using the State of Florida Bald Eagle nest site locations from the first survey year (1998) and the most recent survey year (2014) to produce two different maps.
+
+## Statistical Analysis
+Bioclimactic data were downloaded from bioclim to make predictive maps for where in Florida bald eagle nests are most likely to be found based on the bioclimactic parameters of known nest sites.
+
+# Results (minimum of 1 plot and one table)
+Many fewer nests were documented by the State in 2014 compared to 1998 (see Table 1). This led to a much reduced predicted range for Bald Eagle nesting places in the 2014 map (Fig. 1b) compared to the 1998 map (Fig. 1a).
+
+|Survey Year|Number of nests documented|
+|-----------|--------------------------|
+|    1998   |                  957     |
+|    2014   |                  256     |
+Table 1. Data from the first and most recent survey years for Bald Eagle nests in the State of Florida.
+
+![alt text]("C:/Users/dm528/Desktop/workshop_spring2020/1998.jpeg")
+Fig 1a
+
+![alt text]("C:/Users/dm528/Desktop/workshop_spring2020/2014.jpeg")
+Fig 1b
+
+# Discussion (1 paragrapgh)
+The 2014 map produces higher maximum probabilities (note that the scale goes up to 0.6 on the 2014 map but not the 1998 map), but also suggests less of the state is likely to have Bald Eagle nests present. Both these maps could be improved by creating psuedo-absence points as Jeff Oliver did in his tutorial. An examination of the State's metadata also revealed that the State changed its survey methods in 2008. After 2008, it put less effort into covering the entire state and instead focused on collecting more detailed data at known nests only. Therefore the reduced range for Bald Eagle nesting across the state shown in the 2014 map does not reflect a reduction in nesting by the species, but instead reflects the altered survey methods of the State.
+
+#References
+http://geodata.myflorida.com/datasets/eb20bf44aeea44a8ab4a47cd4329c6b6_5
