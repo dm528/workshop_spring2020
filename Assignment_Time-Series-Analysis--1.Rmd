@@ -1,7 +1,9 @@
 ---
-title: "Workshop 3_Timeseries Models"
+title: "Final Project"
 author: "Donna Marain"
-date: "1/24/2020"
+date: "3/25/2020"
+header-includes:
+    - \usepackage{setspace}\doublespacing
 output:
   pdf_document: default
   html_document: default
@@ -9,48 +11,23 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-# Objectives and Site Information
-The primary objective of this analysis is to determine which environmental variable best correlates with the patterns seen in net ecosystem exchange (NEE) at the TS/Ph-7 eddy covariance flux tower located at 25.19080491, -80.63910514 in Everglades National Park. This investigation is important because this flux tower was the first such tower to be installed in a mangrove forest back in 2003.^1^ This tower therefore provides the longest dataset recording mangrove forest productivity. 
+# Introduction
+Colonial waterbirds have been monitored in South Florida for more than 100 years (Frederick and Ogden 2003).The first systematic surveys estimated 180,000-245,000 wading birds nested in the central and southern Everglades in the 1930’s (Ogden 1994). Surveys today count roughly 40,000 nests on average (Cook and Baranski 2019). There has also been a spatial shift in breeding grounds away from the coasts towards freshwater wetlands inland due to habitat degradation (Ogden 1994). Because the ecology of these birds has changed so much in response to habitat modification, the Comprehensive Everglades Restoration Plan aims to not only increase the number of nesting pairs of waterbirds, but also to restore the proportion of birds nesting in coastal colonies to 50% (Cook and Baranski 2019). Colonial waterbirds can be especially useful indicators in marine coastal regions because they provide an above-water signal for underwater ecosystem phenomena; they are often colonial allowing for a small number of highly-visible survey targets; they are mobile and respond to environmental changes with their movements; and they often reside high in the ecosystem food-web, requiring abundant, healthy prey resources to thrive (Piatt et al. 2007, Ogden et al. 2014).
+<p>&nbsp;</p>
+In 2009, the South Florida/Caribbean Inventory and Monitoring Office (SFCN) of the National Park Service began monthly aerial surveys of colonial waterbirds within Biscayne National Park, the first systematic monitoring of waterbirds in this Park (Muxo et al. 2015). In this investigation, I use ARIMA models to investigate the seasonality of the breeding activity seen in the park.
 
 # Methods
-I fit autoregressive integrated moving average (ARIMA) models from R package forecast to the NEE data from calendar year 2018 at TS/Ph-7. I only tested six models, four of which were provided in class and two of which were identified by Barr et al (2010) as the most important environmental drivers in this system: air temperature and phosynthetically active radition (PAR).
+Beginning in 2009, the SFCN began monthly aerial surveys of known bird colonies (Muxo et al. 2015). An additional yearly survey of the entire park is also conducted to look for newly established colonies. Surveys are accomplished by helicopter, which circles offshore of the colony island at an elevation of 150 feet. A biologist uses a Nikon D300s SLR camera with a Nikon AF-S 70-300mm f/4.5-5.6 VR zoom lens to take oblique aerial photographs of each colony. The biologist takes pictures continuously in order to later create a mosaic of overlapping pictures that cover the entire breeding colony. A second observer accompanies the biologist to assist with data collection.
+<p>&nbsp;</p>
+The photos are then processed in Adobe Photoshop elements 15. Photos are visually scanned for identifiable active nests. Active nests are classified for breeding status and include nests with eggs, chicks, adult birds, and those that are unoccupied but appear well-maintained (see Muxo et al. 2015 for more details). Photos are printed and physically examined to ensure nests are not double-counted in overlapping photos from the same survey. Individual nests are not tracked through time.
+<p>&nbsp;</p>
+Only survey data from 2010-2018 were used for analyses because these years represent complete annual surveys. Thirteen months (January, May, August, and October 2012, January, October, and November 2013, October and November 2014, April and May 2016, May 2017, and March 2018) were not surveyed due to logistical constraints (i.e. budget, helicopter availability, weather). To fill in these gaps, the nest count in the month preceding and following the gap were averaged.
+![](C:/Users/DM528/Pictures/BISC.JPG)
+Fig. 1: A map showing the nine colonies documented over the course of the study and the Park boundary in green.
 
-## Statistical Analysis
-Environmental variables were cleaned of outliers using the tsclean() function. Cleaned variables were then tested for stationarity with an augmented Dickey-Fuller test. If variables failed this test, cleaned variables were differenced and the ADF test re-run to see if the differenced clean variables were stationary. Stationary variables were then added to an auto-ARIMA function as an explanatory variable for nee.
 
-The models produced by the auto-ARIMA function were evaluated by their Akaike's Information Criterion (AIC). The model with the smallest AIC is considered the most parsimonious, meaning it fits the data best with the fewest parameters. By convention, models with AICs that differ by less than 2 are considered the most supported by the data, those that differ between 2 and 7 are considered to be somewhat supported by the data, and those that differ by more than 7 are considered to have little support in the data.
+# Results 
 
-# Results (minimum of 1 plot and one table)
-The auto-ARIMA model which used air temperature as its explanatory variable had the best fit to the data (see Table 1). 
-
-|Model Name| Model parameters           |df|  AIC |
-|----------|----------------------------|--|------|
-|arima.nee1|y=nee, no x                 | 9|703.09|
-|arima.nee2|y=nee, no x, lag=10         |18|704.77|
-|arima.nee3|y=nee, x=salinity           |12|706.19|
-|arima.nee4|y=nee, x= extreme salinity  | 9|700.57|
-|arima.nee5|y=nee, x= par               | 9|683.68|
-|arima.nee6|y=nee, x= air temperature   | 8|660.8 |
-Table 1. Model results.
-
-```{r pressure, echo=FALSE, message=FALSE, results='hide',fig.keep='all'}
- load("C:/Users/dm528/Desktop/workshop_spring2020/ARIMA_Workshop.RData")
-library(zoo)
-library(tseries)
-library(forecast)
-library(xts)
-nee <- ts( mangroves$nee, start= 1, frequency=30)
-tair<-ts(mangroves$tair,start=1,frequency=30)
-arima.nee6<-auto.arima(nee,xreg=c(diff(tair),0),trace=TRUE)
-par(mfrow=c(1,1))
-{plot(nee , typ="l"); lines(fitted(arima.nee6),col="red")}
-```
-Plot 1: Best model (arima.nee6) predictions in red plotted against the raw nee data in black.
-
-# Discussion (1 paragrapgh)
-The discrepancies between the red and black lines in Plot 1 shows that my best model is not a perfect fit to the raw data, but the AIC values show it is vastly superior to any other model I ran. Models that include multiple explanatory variables might provide a better fit to the data, but at the same time a perfect fit is not desirable because then the model would not be generalizable to other times and places. 
+# Discussion 
 
 #References
-1. https://fcelter.fiu.edu/research/key-findings-productivity-gradients-in-mangroves/index.html
-
-Barr, J.G., V. Engel, J.D. Fuentes, J.C. Zieman, T.L. O'Halloran, T.J. Smith, G. Anderson. 2010. Controls on mangrove forest-atmosphere carbon dioxide exchanges in western Everglades National Park. Journal of Geophysical Research 115: G02020.

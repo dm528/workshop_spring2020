@@ -1,0 +1,138 @@
+> library(knitr)
+> library(openxlsx)
+> library(zoo)
+
+Attaching package: ‘zoo’
+
+The following objects are masked from ‘package:base’:
+
+    as.Date, as.Date.numeric
+
+> library(tseries)
+Registered S3 method overwritten by 'quantmod':
+  method            from
+  as.zoo.data.frame zoo 
+
+    ‘tseries’ version: 0.10-47
+
+    ‘tseries’ is a package for time series analysis and computational finance.
+
+    See ‘library(help="tseries")’ for details.
+
+> library(forecast)
+> library(xts)
+> data<-read.xlsx("C:/Users/DM528/Documents/DCCO_ARIMA.xlsx",2)
+> timeseries<-ts(data$Nests,start=1,frequency=12)
+> plot(timeseries)
+> plot(timeseries,ylab="Montly Nest Count")
+> ts.d<-decompose(timeseries,"multiplicative")
+> plot(ts.d)
+> #References
+> Cook, M. I. and M. Baranski (Eds.). 2019. South Florida Wading Bird Report, Volume 24. South Florida Water Management District, West Palm Beach, Florida.
+Error: unexpected ',' in "Cook,"
+> plot(timeseries,ylab="Montly Nest Count",main="Double-crested Cormorant monthly nests counts across Biscayne National Park")
+> View(data)
+> mean(data$Nests)
+[1] 494.5278
+> sd(data$Nests)
+[1] 235.8708
+> basics<-read.xlsx("C:/Users/DM528/Documents/DCCO_ARIMA.xlsx",1)
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:xts’:
+
+    first, last
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> basics<-basics%>%group_by(SampleMonth)%>%summarise_at(TotalActiveNests,sum,na.rm=T)
+Error in check_dot_cols(.vars, .cols) : 
+  object 'TotalActiveNests' not found
+> basics<-basics%>%group_by(SampleMonth)%>%summarise_at("TotalActiveNests",sum,na.rm=T)
+> View(basics)
+> basics<-read.xlsx("C:/Users/DM528/Documents/DCCO_ARIMA.xlsx",1)
+> basics<-basics%>%group_by(SampleMonth,SampleYear)%>%summarise_at("TotalActiveNests",sum,na.rm=T)
+> basics<-basics%>%group_by(SampleMonth)%>%summarise_at("TotalActiveNests",average,na.rm=T)
+Error in is_fun_list(.funs) : object 'average' not found
+> basics<-basics%>%group_by(SampleMonth)%>%summarise_at("TotalActiveNests",mean,na.rm=T)
+> plot(basics$TotalActiveNests,basics$SampleMonth)
+> barplot(basics$SampleMonth,basics$TotalActiveNests)
+> barplot(basics$TotalActiveNests)
+> knitr::opts_chunk$set(echo = TRUE)
+> barplot(basics$TotalActiveNests,ylab="Nest Count",xlab="Month",main="Average monthly Double-crested Cormorant nest count")
+> barplot(basics$TotalActiveNests,ylab="Nest Count",xlab="Month",main="Average monthly Double-crested Cormorant nest count")
+> data<-read.xlsx("C:/Users/DM528/Documents/DCCO_ARIMA.xlsx",2)
+> timeseries<-ts(data$Nests,start=1,frequency=12)
+> plot(timeseries,ylab="Montly Nest Count")
+> lines(tsclean(timeseries),col="red")
+> ts.d<-decompose(timeseries,"multiplicative")
+> plot(ts.d)
+> trend<-lm(ts.d$trend)
+Error in formula.default(object, env = baseenv()) : invalid formula
+> summary(ts.d$trend)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+  356.9   448.5   481.4   497.7   526.3   664.8      12 
+> trend<-lm(formula=ts.d$trend~ts.d$x)
+> summary(trend)
+
+Call:
+lm(formula = ts.d$trend ~ ts.d$x)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-141.80  -50.43  -13.88   44.17  142.58 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 455.77275   15.39047  29.614  < 2e-16 ***
+ts.d$x        0.08412    0.02776   3.031  0.00315 ** 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 65.99 on 94 degrees of freedom
+  (12 observations deleted due to missingness)
+Multiple R-squared:  0.08902,	Adjusted R-squared:  0.07933 
+F-statistic: 9.185 on 1 and 94 DF,  p-value: 0.003151
+
+> .08*12
+[1] 0.96
+>  ts.d$x
+   Jan  Feb  Mar  Apr  May  Jun  Jul  Aug  Sep  Oct  Nov  Dec
+1  299  280  325  503  417  657  455  510  429  244   69  121
+2  268  289  808  745  744  625  427  757  473  183  244  317
+3  409  501  412  310  412  513  645  625  605  442  279  181
+4  376  571  623  417  414  421  684  502  405  312  314  222
+5  512  522  890 1202  234  485  629  649  368  299  299  230
+6  495  316  412  414  650  764  885  696  288  124  184  557
+7  700  498  528  745  746  963 1056  807  654  288  433  561
+8  463  572  307  497  790 1082  795  417   26   27   36  113
+9  842  639  640  641  893  698  665  735  566  367  290  441
+> ts.d$seasonal
+        Jan       Feb       Mar       Apr       May       Jun       Jul       Aug       Sep       Oct       Nov       Dec
+1 1.0150312 0.9763927 1.1582436 1.2130964 1.2022154 1.3701765 1.4389890 1.2744670 0.8321743 0.4974751 0.4645448 0.5571940
+2 1.0150312 0.9763927 1.1582436 1.2130964 1.2022154 1.3701765 1.4389890 1.2744670 0.8321743 0.4974751 0.4645448 0.5571940
+3 1.0150312 0.9763927 1.1582436 1.2130964 1.2022154 1.3701765 1.4389890 1.2744670 0.8321743 0.4974751 0.4645448 0.5571940
+4 1.0150312 0.9763927 1.1582436 1.2130964 1.2022154 1.3701765 1.4389890 1.2744670 0.8321743 0.4974751 0.4645448 0.5571940
+5 1.0150312 0.9763927 1.1582436 1.2130964 1.2022154 1.3701765 1.4389890 1.2744670 0.8321743 0.4974751 0.4645448 0.5571940
+6 1.0150312 0.9763927 1.1582436 1.2130964 1.2022154 1.3701765 1.4389890 1.2744670 0.8321743 0.4974751 0.4645448 0.5571940
+7 1.0150312 0.9763927 1.1582436 1.2130964 1.2022154 1.3701765 1.4389890 1.2744670 0.8321743 0.4974751 0.4645448 0.5571940
+8 1.0150312 0.9763927 1.1582436 1.2130964 1.2022154 1.3701765 1.4389890 1.2744670 0.8321743 0.4974751 0.4645448 0.5571940
+9 1.0150312 0.9763927 1.1582436 1.2130964 1.2022154 1.3701765 1.4389890 1.2744670 0.8321743 0.4974751 0.4645448 0.5571940
+> adf.test(timeseries)
+
+	Augmented Dickey-Fuller Test
+
+data:  timeseries
+Dickey-Fuller = -5.3972, Lag order = 4, p-value = 0.01
+alternative hypothesis: stationary
+
+Warning message:
+In adf.test(timeseries) : p-value smaller than printed p-value

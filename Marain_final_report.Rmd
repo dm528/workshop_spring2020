@@ -1,0 +1,102 @@
+---
+title: "Final Project"
+author: "Donna Marain"
+date: "3/25/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Introduction
+Colonial waterbirds have been monitored in South Florida for more than 100 years (Frederick and Ogden 2003).The first systematic surveys estimated 180,000-245,000 wading birds nested in the central and southern Everglades in the 1930’s (Ogden 1994). Surveys today count roughly 40,000 nests on average (Cook and Baranski 2019). There has also been a spatial shift in breeding grounds away from the coasts towards freshwater wetlands inland due to habitat degradation (Ogden 1994). Because the ecology of these birds has changed so much in response to habitat modification, the Comprehensive Everglades Restoration Plan aims to not only increase the number of nesting pairs of waterbirds, but also to restore the proportion of birds nesting in coastal colonies to 50% (Cook and Baranski 2019). Colonial waterbirds can be especially useful indicators in marine coastal regions because they provide an above-water signal for underwater ecosystem phenomena; they are often colonial allowing for a small number of highly-visible survey targets; they are mobile and respond to environmental changes with their movements; and they often reside high in the ecosystem food-web, requiring abundant, healthy prey resources to thrive (Piatt et al. 2007, Ogden et al. 2014).
+<p>&nbsp;</p>
+In 2010, the South Florida/Caribbean Inventory and Monitoring Office (SFCN) of the National Park Service began monthly aerial surveys of colonial waterbirds within Biscayne National Park (BNP), the first systematic monitoring of waterbirds in this Park (Muxo et al. 2015). Previous work (Marain et al. 2020) analyzed spatial and temporal trends in these data using negative binomial generalized linear models and found a roughly 5% growth trend in this population of birds, but these models provide no insight into the seasonality of breeding. In this investigation, I use ARIMA models to investigate the seasonality of the breeding activity seen in the park.
+\newpage
+
+# Methods
+Beginning in 2009, the SFCN began monthly aerial surveys of known bird colonies (Muxo et al. 2015). An additional yearly survey of the entire park is also conducted to look for newly established colonies. Surveys are accomplished by helicopter, which circles offshore of the colony island at an elevation of 150 feet. A biologist uses a Nikon D300s SLR camera with a Nikon AF-S 70-300mm f/4.5-5.6 VR zoom lens to take oblique aerial photographs of each colony. The biologist takes pictures continuously in order to later create a mosaic of overlapping pictures that cover the entire breeding colony. A second observer accompanies the biologist to assist with data collection.
+<p>&nbsp;</p>
+The photos are then processed in Adobe Photoshop elements 15. Photos are visually scanned for identifiable active nests. Active nests are classified for breeding status and include nests with eggs, chicks, adult birds, and those that are unoccupied but appear well-maintained (see Muxo et al. 2015 for more details). Photos are printed and physically examined to ensure nests are not double-counted in overlapping photos from the same survey. However, individual nests are not tracked through time.
+<p>&nbsp;</p>
+Double-crested Cormorant nests were 89% of the nests photographed over the study period, therefore all analyses in this investigation were conducted only on their data. Thirteen months (January, May, August, and October 2012, January, October, and November 2013, October and November 2014, April and May 2016, May 2017, and March 2018) were not surveyed due to logistical constraints (i.e. budget, helicopter availability, weather). To fill in these gaps for the ARIMA models, the nest count in the month preceding and following the gap were averaged.<p>&nbsp;</p>
+![](C:/Users/DM528/Pictures/BISC.JPG){height=30%}
+Fig. 1: A map showing the nine colonies documented over the course of the study and the Park boundary in green.
+
+
+# Results 
+```{r pressure, echo=FALSE, message=FALSE, results='hide',fig.keep='all',out.width="80%"}
+library(openxlsx)
+library(zoo)
+library(tseries)
+library(forecast)
+library(xts)
+data<-read.xlsx("C:/Users/DM528/Documents/DCCO_ARIMA.xlsx",2)
+timeseries<-ts(data$Nests,start=1,frequency=12)
+plot(timeseries,ylab="Montly Nest Count",main="Double-crested Cormorant monthly nests counts across BNP")
+```
+Fig.2: Total nests counted across all nine colonies of Double-crested Cormorants in Biscayne National Park over the nine year study period.
+<p>&nbsp;</p>
+Raw nest counts show a lot of variation over the course of the study (mean ± SD = 494.5 ± 235.9), but there does appear to be some seasonality to the data, with notably fewer nests counted from October to December (Fig. 3).
+<p>&nbsp;</p>
+```{r, echo=FALSE, message=FALSE, results='hide',fig.keep='all',out.width="70%"}
+library(dplyr)
+basics<-read.xlsx("C:/Users/DM528/Documents/DCCO_ARIMA.xlsx",1)
+basics<-basics%>%group_by(SampleMonth,SampleYear)%>%summarise_at("TotalActiveNests",sum,na.rm=T)
+basics<-basics%>%group_by(SampleMonth)%>%summarise_at("TotalActiveNests",mean,na.rm=T)
+barplot(basics$TotalActiveNests,ylab="Nest Count",xlab="Month",main="Average monthly Double-crested Cormorant nest count")
+```
+Fig. 3: Average number of Double-crested Cormorant nests counted in each month over the nine year study period.<p>&nbsp;</p>
+
+No outliers were found in the timeseries data (analysis not shown) and the timeseries was found to be stationary using the augmented Dickey-Fuller test (p=0.01). The time series was then decomposed (Fig. 4). 
+```{r, echo=FALSE, message=FALSE, results='hide',fig.keep='all',out.width="70%"}
+ ts.d<-decompose(timeseries,"multiplicative")
+ plot(ts.d)
+```
+Fig. 4: Decomposition of the timeseries data into its trend, seasonal, and random components. 
+<p>&nbsp;</p>
+The decomposition confirms the increasing population trend found by the linear models done in the previous study. The slope of a linear regression model fitted to the trend data was found to be 0.08 ± 0.03 (p=0.003). The seasonal component of the decomposition found peak nesting occurred in mid-summer, the nadir of nesting occurred from September to December, and moderate breeding occurred throughout the rest of the year from January to May (Table 1).
+
+|Month     |Quantification of seasonal effect|
+|----------|---------------------------------|
+|January   | 1.015                           |
+|Febraury  | 0.98                            |
+|March     | 1.16                            |
+|April     | 1.21                            |
+|May       | 1.20                            |
+|June      | 1.37                            |
+|July      | 1.44                            |
+|August    | 1.27                            |
+|September | 0.83                            |
+|October   | 0.5                             |
+|November  | 0.46                            |
+|December  | 0.56                            |
+Table 1. Results from the seasonal component of the decomposed model.
+
+# Discussion 
+
+This analysis supports the finding of an increase in Double-crested Cormorant breeding activity in Biscayne National Park found in the previous analysis using generalized linear models. The seasonality and randomness in these data did not prevent the linear models from detecting the overall trend. <p>&nbsp;</p>
+
+The linear models previously used provided no insight into the seasonality of breeding in this population. Tackling this question proved to be one of the more difficult aspects of the previous investigation because breeding activity occurs in every month of the year in this population. A review of the literature at that time did not reveal best practices for analyzing the seasonality of year-round breeding bird populations, most likely because most breeding bird research occurs in temperate regions of North America and Europe where breeding activity is curtailed by winter and migration. <p>&nbsp;</p>
+
+Even this limited information on seasonality could prove useful to park management. Islands with known breeding bird colonies are designated as Sensitive Resource Zones where visitor activity is curtailed with regulations like set-back distances for boating and other recreation during specific times of year (United States 2011).<p>&nbsp;</p>
+However, this is a very broad, first investigation into these data. Future studies should follow individual nests through time to gain accurate nest counts throughout the year (under current methods nests are double-counted between surveys at an unknown rate because cormorants spend roughly four weeks incubating eggs and another six weeks raising chicks). Moreover, it is currently unknown why the breeding season is so prolonged in this population (9 months). Are cormorants breeding twice within the same year or do different birds breed earlier or later? If the latter, what distinguishes early breeders from late breeders? Is there a difference in productivity in nests at different times of year? This system is ripe with potential ornithological study questions, which could in turn reveal much about the state of the protected coastal marine ecosystem in Biscayne National Park.
+
+# References
+
+Cook, M. I. and M. Baranski (Eds.). 2019. South Florida Wading Bird Report, Volume 24. South Florida Water Management District, West Palm Beach, Florida.
+
+Frederick, P. C. and J. C. Ogden. 2003. Monitoring wetland ecosystems using avian populations: seventy years of surveys in the Everglades. Pages 321-250 in Monitoring ecosystems: interdisciplinary approaches for evaluating ecoregional initiatives. (D. E. Busch and J. C. Trexler, Eds.). Island Press, Washington, D.C.
+
+Marain, D. M., K. R, T. Whelan, and R. Muxo. 2020. Spatial and Temporal Patterns of Double-crested Cormorant (_Phalacrocorax auritus_) Breeding Over Nine Years in Biscayne National Park, Florida. submitted to Waterbirds.
+
+Muxo, R., K. R. T. Whelan, R. Urgelles, J. Alonso, J. M. Patterson, and A. J. Atkinson. 2015. Biscayne National Park colonial nesting birds monitoring protocol, v. 1.00. Natural Resource Report NPS/SFCN/NRR—2015/994. U.S. Department of the Interior, National Park Service, Fort Collins, Colorado.
+
+Ogden, J. C. 1994. A comparison of wading bird nesting colony dynamics (1931-1946 and 1974-1989) as an indication of ecosystem conditions in the southern Everglades. Pages 533-570 in Everglades: The Ecosystem and Its Restoration. St. Lucie Press, Boca Raton, Florida.
+
+Ogden, J. C., J. D. Baldwin, O. L. Bass, J. A. Browder, M. I. Cook, P. C. Frederick, P. E. Frezza, R. A. Galvez, A. B. Hodgson, K. D. Meyer, L. D. Oberhofer, A. F. Paul, P. J. Flecther, S. M. Davis, and J. J. Lorenz. 2014. Waterbirds as indicators of ecosystem health in the coastal marine habitats of southern Florida: 1. Selection and justification for a suite of indicator species. Ecological indicators. 44: 148-163.
+
+Piatt, J. F., W. J. Sydeman, and F. Wiese. 2007. Introduction: seabirds as indicators of marine ecosystems. Marine Ecology Progress Series. 352: 199-204.
+
+United States. National Park Service. (2011). Biscayne National Park Draft General Management Plan/Environmental Impact Statement. [Miami-Dade County, Florida] :National Park Service, U.S. Dept. of the Interior,
